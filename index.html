@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="bg">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <title>Едрогабаритни отпадъци — София</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <main class="page">
+    <header class="hero">
+      <div class="eyebrow">София · Едрогабаритни отпадъци · DEV v4</div>
+      <h1>Кога да изхвърля едрогабаритни отпадъци?</h1>
+      <p>Въведи адрес в София. Ще маркираме цялото каре за събиране и ще покажем следващите дати.</p>
+    </header>
+
+    <section class="search">
+      <input id="address" placeholder='напр. ул. „Московска“ № 33' value='ул. „Московска“ № 33' autocomplete="off">
+      <button id="check">Провери</button>
+    </section>
+
+    <div id="status" class="status">Зареждам картата и общинските зони…</div>
+    <div class="sourceRow">
+      <div id="sourceMeta" class="sourceMeta"></div>
+      <button id="refreshData" class="refreshBtn" type="button">Обнови данните</button>
+    </div>
+
+    <section id="result" class="result hidden">
+      <div class="resultTop">
+        <div>
+          <div class="small">Адрес</div>
+          <div id="resolvedAddress" class="address"></div>
+        </div>
+        <div id="district" class="district"></div>
+      </div>
+
+      <div class="dateGrid">
+        <article class="dateCard green">
+          <div class="small">Следващо изнасяне</div>
+          <div id="putDate" class="bigDate"></div>
+          <div class="timeInstruction">Оставете до контейнерите след 19:00 ч. и в деня на извозване преди 09:00 ч.</div>
+        </article>
+        <article class="dateCard amber">
+          <div class="small">Извозване</div>
+          <div id="collectDate" class="bigDate"></div>
+          <div id="collectDow" class="hint"></div>
+        </article>
+      </div>
+
+      <div class="nextWrap">
+        <div class="small">Следващи дати</div>
+        <div id="nextDates" class="nextDates"></div>
+      </div>
+    </section>
+
+
+    <section class="wasteGuide">
+      <div class="guideHead">
+        <div>
+          <div class="small">Какво може да се оставя</div>
+          <h2>Едрогабаритни отпадъци от дома</h2>
+        </div>
+      </div>
+      <div class="guideGrid">
+        <article class="guideCard ok">
+          <h3>Може</h3>
+          <p>Мебели, дивани, фотьойли, шкафове, маси, столове, плоскости, детски колички, велосипеди и други обемни вещи от дома, които не се побират в контейнера.</p>
+          <p class="guideNote">По общинските графици се събират и малки количества строителни отпадъци от домакинствата.</p>
+        </article>
+        <article class="guideCard no">
+          <h3>Не тук</h3>
+          <p>Електроуреди, опасни отпадъци, лекарства, бои и химикали не са за този поток и се събират отделно.</p>
+          <p class="guideNote">Не поставяй отпадъка вътре в контейнера — оставя се до контейнерите за битови отпадъци.</p>
+          <p class="guideNote"><strong>Кога:</strong> Оставете до контейнерите след 19:00 ч. и в деня на извозване преди 09:00 ч.</p>
+        </article>
+      </div>
+    </section>
+
+    <section class="mapCard">
+      <div id="map"></div>
+    </section>
+
+    <footer>
+      Официални зони за едрогабаритни отпадъци: Столична община / Данните на София. 
+      Google Maps се използва само за картата и геокодирането на въведения адрес.
+    </footer>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="app.js"></script>
+  <script>
+    document.getElementById("refreshData").addEventListener("click", async () => {
+      const b=document.getElementById("refreshData");
+      b.disabled=true; b.textContent="Проверявам…";
+      try{
+        await loadZones(true);
+        setStatus(`Обновено — заредени са ${zonesGeoJson.features.length} общински карета.`);
+      }catch(e){
+        setStatus(e.message||String(e),true);
+      }finally{
+        b.disabled=false; b.textContent="Обнови данните";
+      }
+    });
+  </script>
+</body>
+</html>
