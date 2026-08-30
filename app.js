@@ -222,7 +222,7 @@ function renderContainerMarkers(center){
   const c={lat:center.lat(),lng:center.lng()};
 
   const nearby=containerData
-    .filter(p=>types.includes(p.type))
+    .filter(p=>types.includes(p.type) || p.type==="Разделно събиране")
     .map(p=>({...p,dist:distanceMeters(c,p)}))
     .filter(p=>p.dist<=2500)
     .sort((a,b)=>a.dist-b.dist)
@@ -252,12 +252,26 @@ function renderContainerMarkers(center){
   if(meta) meta.textContent=`Показани ${nearby.length} контейнера в радиус до 2,5 км.`;
 }
 async function loadContainers(){
-  const r=await fetch("/api/containers",{cache:"no-store"});
+  const meta=document.getElementById("containersMeta");
+  if(meta) meta.textContent="Зареждам локациите на контейнерите…";
+  const r=await fetch("/api/containers?refresh=1",{cache:"no-store"});
   const data=await r.json();
   if(!r.ok || data.error) throw new Error(data.error||"Не успях да заредя контейнерите.");
-  containerData=data.containers||[];
-  const meta=document.getElementById("containersMeta");
-  if(meta) meta.textContent=`Заредени ${containerData.length} официални локации на контейнери.`;
+  containerData=(data.containers||[]).map(p=>{
+    let t=String(p.type||"").toLowerCase();
+    let type="Разделно събиране";
+    if(/стък|glass|зелен/.test(t)) type="Стъкло";
+    else if(/харт|картон|paper|cardboard|син/.test(t)) type="Хартия и картон";
+    else if(/пласт|метал|plastic|metal|жълт/.test(t)) type="Пластмаса и метал";
+    return {...p,type};
+  });
+  if(meta){
+    if(containerData.length){
+      meta.textContent=`Заредени ${containerData.length} официални локации на контейнери.`;
+    }else{
+      meta.textContent="В момента общинският източник не върна разпознаваеми координати за контейнерите.";
+    }
+  }
 }
 
 
