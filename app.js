@@ -142,10 +142,10 @@ async function checkAddress(){
     const loc=best.geometry.location;
     const feature=zoneAt(loc.lng(),loc.lat());
     if(!feature) throw new Error("Адресът е намерен, но не попада в публикувана зона за едрогабаритни отпадъци.");
+    renderResult(best.formatted_address,feature);
     drawZone(feature,loc);
     lastAddressLatLng=loc;
     renderContainerMarkers(loc);
-    renderResult(best.formatted_address,feature);
     setStatus("Готово.");
   }catch(e){
     console.error(e);
@@ -365,10 +365,10 @@ async function useCurrentLocation(){
         const rev=await geocoder.geocode({location:loc});
         if(rev.results?.[0]?.formatted_address) label=rev.results[0].formatted_address;
       }catch(_){}
+      renderResult(label,feature);
       drawZone(feature,loc);
       lastAddressLatLng=loc;
       renderContainerMarkers(loc);
-      renderResult(label,feature);
       setStatus("Готово.");
     }catch(e){
       setStatus(e.message||String(e),true);

@@ -34,6 +34,24 @@
         <div id="district" class="district"></div>
       </div>
 
+      <section class="mapCard">
+      <div id="map"></div>
+    </section>
+
+      <section class="mapTools">
+      <div>
+        <div class="small">Контейнери за разделно събиране</div>
+        <div class="mapToolsTitle">Покажи контейнерите около адреса</div>
+      </div>
+      <div class="filterRow">
+        <label><input type="checkbox" class="containerFilter" value="Пластмаса и метал" checked> Пластмаса и метал</label>
+        <label><input type="checkbox" class="containerFilter" value="Стъкло" checked> Стъкло</label>
+        <label><input type="checkbox" class="containerFilter" value="Хартия и картон" checked> Хартия и картон</label>
+        <label class="hazardToggle"><input type="checkbox" id="hazardToggle" checked> Мобилни пунктове за опасни отпадъци</label>
+      </div>
+      <div id="containersMeta" class="sourceMeta"></div>
+    </section>
+
       <div class="dateGrid">
         <article class="dateCard green">
           <div class="small">Следващо изнасяне</div>
@@ -142,25 +160,6 @@
         <p class="extraNote">За по-големи количества използвайте специализиран контейнер или лицензирана фирма.</p>
       </article>
     </section>
-
-    <section class="mapTools">
-      <div>
-        <div class="small">Контейнери за разделно събиране</div>
-        <div class="mapToolsTitle">Покажи контейнерите около адреса</div>
-      </div>
-      <div class="filterRow">
-        <label><input type="checkbox" class="containerFilter" value="Пластмаса и метал" checked> Пластмаса и метал</label>
-        <label><input type="checkbox" class="containerFilter" value="Стъкло" checked> Стъкло</label>
-        <label><input type="checkbox" class="containerFilter" value="Хартия и картон" checked> Хартия и картон</label>
-        <label class="hazardToggle"><input type="checkbox" id="hazardToggle" checked> Мобилни пунктове за опасни отпадъци</label>
-      </div>
-      <div id="containersMeta" class="sourceMeta"></div>
-    </section>
-
-    <section class="mapCard">
-      <div id="map"></div>
-    </section>
-
     <footer>
       Официални зони за едрогабаритни отпадъци: Столична община / Данните на София. 
       Google Maps се използва за картата и геокодирането на въведения адрес. Локациите на контейнерите за разделно събиране са от официалния портал „Данните на София“. Мобилните пунктове за опасни отпадъци са по официалния график на Столична община за 2026 г.
