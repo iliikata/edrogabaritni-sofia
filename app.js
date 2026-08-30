@@ -1,5 +1,5 @@
 
-let map, geocoder, zonesGeoJson, zonesMeta = {}, marker, selectedPolygons = [], infoWindow;
+let map, geocoder, zonesGeoJson, zonesMeta = {}, marker, selectedPolygons = [], infoWindow, containerData = [], containerMarkers = [], lastAddressLatLng = null, hazardMarkers = [];
 const $ = id => document.getElementById(id);
 const bgDays = ["неделя","понеделник","вторник","сряда","четвъртък","петък","събота"];
 const dayPatterns = [
@@ -143,6 +143,8 @@ async function checkAddress(){
     const feature=zoneAt(loc.lng(),loc.lat());
     if(!feature) throw new Error("Адресът е намерен, но не попада в публикувана зона за едрогабаритни отпадъци.");
     drawZone(feature,loc);
+    lastAddressLatLng=loc;
+    renderContainerMarkers(loc);
     renderResult(best.formatted_address,feature);
     setStatus("Готово.");
   }catch(e){
@@ -188,6 +190,198 @@ async function loadZones(force=false){
   renderSourceMeta();
 }
 
+
+function selectedContainerTypes(){
+  return [...document.querySelectorAll(".containerFilter:checked")].map(x=>x.value);
+}
+function clearContainerMarkers(){
+  containerMarkers.forEach(m=>m.setMap(null));
+  containerMarkers=[];
+}
+function distanceMeters(a,b){
+  const R=6371000, toRad=x=>x*Math.PI/180;
+  const dLat=toRad(b.lat-a.lat), dLng=toRad(b.lng-a.lng);
+  const x=Math.sin(dLat/2)**2 + Math.cos(toRad(a.lat))*Math.cos(toRad(b.lat))*Math.sin(dLng/2)**2;
+  return 2*R*Math.asin(Math.sqrt(x));
+}
+function markerSymbol(type){
+  const fill = type==="Стъкло" ? "#2f7d45" : type==="Хартия и картон" ? "#2b65b1" : "#e0b000";
+  return {
+    path: google.maps.SymbolPath.CIRCLE,
+    scale: 7,
+    fillColor: fill,
+    fillOpacity: .95,
+    strokeColor: "#ffffff",
+    strokeWeight: 2
+  };
+}
+function renderContainerMarkers(center){
+  if(!map || !center) return;
+  clearContainerMarkers();
+  const types=selectedContainerTypes();
+  const c={lat:center.lat(),lng:center.lng()};
+
+  const nearby=containerData
+    .filter(p=>types.includes(p.type))
+    .map(p=>({...p,dist:distanceMeters(c,p)}))
+    .filter(p=>p.dist<=2500)
+    .sort((a,b)=>a.dist-b.dist)
+    .slice(0,80);
+
+  for(const p of nearby){
+    const m=new google.maps.Marker({
+      map,
+      position:{lat:p.lat,lng:p.lng},
+      icon:markerSymbol(p.type),
+      title:p.type
+    });
+    m.addListener("click",()=>{
+      const dist=p.dist<1000?`${Math.round(p.dist)} м`:`${(p.dist/1000).toFixed(1)} км`;
+      const safeAddress=String(p.address||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
+      infoWindow.setContent(
+        `<strong>${p.type}</strong>`+
+        `${p.address?`<br>${safeAddress}`:""}`+
+        `<br><span style="color:#777">${dist} от търсения адрес</span>`
+      );
+      infoWindow.open({map,anchor:m});
+    });
+    containerMarkers.push(m);
+  }
+
+  const meta=document.getElementById("containersMeta");
+  if(meta) meta.textContent=`Показани ${nearby.length} контейнера в радиус до 2,5 км.`;
+}
+async function loadContainers(){
+  const r=await fetch("/api/containers",{cache:"no-store"});
+  const data=await r.json();
+  if(!r.ok || data.error) throw new Error(data.error||"Не успях да заредя контейнерите.");
+  containerData=data.containers||[];
+  const meta=document.getElementById("containersMeta");
+  if(meta) meta.textContent=`Заредени ${containerData.length} официални локации на контейнери.`;
+}
+
+
+const hazardousSchedule2026 = [
+  {date:"2026-09-24",time:"08:30–16:00",district:"Младост",address:'ж.к. Младост 4, ул. „Самара“, бл. 440, срещу парк „Сухото дере“, София'},
+  {date:"2026-09-25",time:"09:00–12:00",district:"Кремиковци",address:'кв. Челопечене, ул. „Ангел Маджаров“, площадът срещу Кметството, София'},
+  {date:"2026-09-25",time:"13:00–16:00",district:"Кремиковци",address:'кв. Враждебна, ул. „8-ма“ № 26, паркингът при ул. „57-ма“, София'},
+  {date:"2026-09-26",time:"10:00–15:00",district:"Слатина",address:'бул. „Шипченски проход“ № 67, София'},
+  {date:"2026-10-02",time:"09:00–16:00",district:"Овча купел",address:'бул. „Цар Борис III“ № 136 В, София'},
+  {date:"2026-10-15",time:"09:00–16:00",district:"Лозенец",address:'ул. „Йосиф Петров“, срещу Семинарията, София'},
+  {date:"2026-10-28",time:"09:00–16:00",district:"Панчарево",address:'с. Панчарево, ул. „Самоковско шосе“ № 230, София'},
+  {date:"2026-11-04",time:"09:30–15:30",district:"Искър",address:'бул. „Кръстю Пастухов“ № 18, София'},
+  {date:"2026-11-17",time:"09:30–15:30",district:"Нови Искър",address:'ул. „Искърско дефиле“ № 121, Нови Искър'},
+  {date:"2026-12-02",time:"10:00–15:00",district:"Връбница",address:'бул. „Хан Кубрат“, зад бл. 328, София'}
+];
+
+function futureHazardEvents(){
+  const today=new Date(); today.setHours(0,0,0,0);
+  return hazardousSchedule2026.filter(e=>{
+    const d=new Date(e.date+"T12:00:00");
+    return d>=today;
+  });
+}
+function hazardDateLabel(iso){
+  const d=new Date(iso+"T12:00:00");
+  return new Intl.DateTimeFormat("bg-BG",{day:"numeric",month:"short"}).format(d);
+}
+function renderHazardUpcoming(){
+  const el=document.getElementById("hazardUpcoming");
+  if(!el) return;
+  const events=futureHazardEvents();
+  el.innerHTML=events.slice(0,5).map(e=>
+    `<span class="hazardEvent">${hazardDateLabel(e.date)} · ${escapeHtml(e.district)} · ${escapeHtml(e.time)}</span>`
+  ).join("");
+}
+function hazardIcon(){
+  return {
+    path: "M 0,-9 9,0 0,9 -9,0 z",
+    scale: 1,
+    fillColor:"#6f3c92",
+    fillOpacity:.95,
+    strokeColor:"#ffffff",
+    strokeWeight:2
+  };
+}
+function clearHazardMarkers(){
+  hazardMarkers.forEach(m=>m.setMap(null));
+  hazardMarkers=[];
+}
+async function geocodeOne(address){
+  const r=await geocoder.geocode({address,region:"bg"});
+  return r.results?.[0]?.geometry?.location || null;
+}
+async function renderHazardMarkers(){
+  clearHazardMarkers();
+  const toggle=document.getElementById("hazardToggle");
+  if(toggle && !toggle.checked) return;
+
+  const events=futureHazardEvents();
+  for(const e of events){
+    try{
+      const loc=await geocodeOne(e.address);
+      if(!loc) continue;
+      const m=new google.maps.Marker({
+        map,
+        position:loc,
+        icon:hazardIcon(),
+        title:`Опасни отпадъци · ${e.district}`
+      });
+      m.addListener("click",()=>{
+        const d=new Date(e.date+"T12:00:00");
+        const fullDate=new Intl.DateTimeFormat("bg-BG",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(d);
+        infoWindow.setContent(
+          `<strong>Мобилен пункт за опасни отпадъци</strong>`+
+          `<br>${escapeHtml(e.district)} · ${escapeHtml(fullDate)}`+
+          `<br>${escapeHtml(e.time)}`+
+          `<br>${escapeHtml(e.address)}`+
+          `<br><span style="color:#666">Безплатно за домакинства</span>`
+        );
+        infoWindow.open({map,anchor:m});
+      });
+      hazardMarkers.push(m);
+    }catch(err){
+      console.warn("Неуспешно геокодиране на мобилен пункт",e.address,err);
+    }
+  }
+}
+
+
+async function useCurrentLocation(){
+  const btn=document.getElementById("nearMe");
+  if(!navigator.geolocation){
+    setStatus("Браузърът не поддържа текуща локация.",true);
+    return;
+  }
+  btn.disabled=true;
+  setStatus("Определям местоположението ви…");
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    try{
+      const loc=new google.maps.LatLng(pos.coords.latitude,pos.coords.longitude);
+      const feature=zoneAt(loc.lng(),loc.lat());
+      if(!feature) throw new Error("Текущата локация не попада в публикувана зона за едрогабаритни отпадъци.");
+      let label="Текуща локация";
+      try{
+        const rev=await geocoder.geocode({location:loc});
+        if(rev.results?.[0]?.formatted_address) label=rev.results[0].formatted_address;
+      }catch(_){}
+      drawZone(feature,loc);
+      lastAddressLatLng=loc;
+      renderContainerMarkers(loc);
+      renderResult(label,feature);
+      setStatus("Готово.");
+    }catch(e){
+      setStatus(e.message||String(e),true);
+    }finally{
+      btn.disabled=false;
+    }
+  },err=>{
+    const msg=err.code===1 ? "Разрешете достъп до местоположението, за да използвате „До мен“." : "Не успях да определя текущата локация.";
+    setStatus(msg,true);
+    btn.disabled=false;
+  },{enableHighAccuracy:true,timeout:10000,maximumAge:120000});
+}
+
 async function init(){
   const key=window.EGO_CONFIG?.GOOGLE_MAPS_API_KEY;
   if(!key || key.includes("PASTE_YOUR")){
@@ -213,9 +407,18 @@ async function init(){
   geocoder=new google.maps.Geocoder();
   infoWindow=new google.maps.InfoWindow();
   await loadZones();
+  try{ await loadContainers(); }catch(e){ console.warn(e); }
+  renderHazardUpcoming();
+  renderHazardMarkers().catch(e=>console.warn(e));
   setStatus(`Готово — заредени са ${zonesGeoJson.features.length} общински карета.`);
   $("check").onclick=checkAddress;
   $("address").addEventListener("keydown",e=>{ if(e.key==="Enter") checkAddress(); });
+  document.getElementById("nearMe").addEventListener("click",useCurrentLocation);
+  document.querySelectorAll(".containerFilter").forEach(el=>{
+    el.addEventListener("change",()=>{ if(lastAddressLatLng) renderContainerMarkers(lastAddressLatLng); });
+  });
+  const hazardToggle=document.getElementById("hazardToggle");
+  if(hazardToggle) hazardToggle.addEventListener("change",()=>renderHazardMarkers());
 }
 
 init().catch(e=>setStatus(e.message||String(e),true));

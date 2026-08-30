@@ -16,7 +16,7 @@
 
     <section class="search">
       <input id="address" placeholder='напр. ул. „Московска“ № 33' value='ул. „Московска“ № 33' autocomplete="off">
-      <button id="check">Провери</button>
+      <button id="check">Провери</button><button id="nearMe" class="nearMeBtn" type="button">📍 До мен</button>
     </section>
 
     <div id="status" class="status">Зареждам картата и общинските зони…</div>
@@ -76,13 +76,94 @@
       </div>
     </section>
 
+
+
+    <section class="specialWaste">
+      <div class="specialHead">
+        <div>
+          <div class="small">Стар електроуред?</div>
+          <h2>Вземат го от дома ви БЕЗПЛАТНО</h2>
+        </div>
+        <div class="freeBadge">БЕЗПЛАТНО</div>
+      </div>
+      <p class="specialIntro">Столична община има договорена система за събиране на електрическо и електронно оборудване, бяла и черна техника директно от дома след предварителна заявка.</p>
+      <div class="contactGrid">
+        <article class="contactCard primary">
+          <div class="small">За 22 района на София</div>
+          <h3>„Елтехресурс“ АД</h3>
+          <a class="phone" href="tel:080014100">0800 14 100</a>
+          <div class="contactNote">национален безплатен телефон</div>
+          <a class="phone secondaryPhone" href="tel:+359885770041">0885 77 00 41</a>
+          <div class="contactNote">order@makmetal.eu</div>
+        </article>
+        <article class="contactCard">
+          <div class="small">Красна поляна и Овча купел</div>
+          <h3>„Екобултех“ АД</h3>
+          <a class="phone secondaryPhone" href="tel:+35924666995">02 4666 995</a>
+          <a class="phone secondaryPhone" href="tel:+359888602916">0888 602 916</a>
+          <div class="contactNote">пон.–пет. · 08:30–17:00</div>
+        </article>
+      </div>
+      <p class="specialFoot">Не оставяйте електроуреди до контейнерите за едрогабаритни отпадъци — за тях има отделно безплатно събиране.</p>
+    </section>
+
+
+    <section class="hazardInfo">
+      <div class="hazardHead">
+        <div>
+          <div class="small">Опасни отпадъци от дома</div>
+          <h2>Мобилни пунктове и безплатно вземане от адрес</h2>
+        </div>
+      </div>
+      <p>Бои, лакове, домакински химикали, лекарства с изтекъл срок, мастила и други опасни отпадъци се събират отделно. На картата показваме предстоящите мобилни пунктове от официалния график за 2026 г.</p>
+      <div class="hazardCallout">
+        <div>
+          <strong>Безплатно вземане от адрес</strong>
+          <span>за количества минимум 1 кг</span>
+        </div>
+        <a class="hazardPhone" href="tel:+359885401300">0885 401 300</a>
+      </div>
+      <div id="hazardUpcoming" class="hazardUpcoming"></div>
+    </section>
+
+
+
+    <section class="extraGuide">
+      <article class="extraCard">
+        <div class="small">Стари гуми</div>
+        <h2>Предайте ги безплатно</h2>
+        <p>Старите гуми могат да се предават в местата за продажба и смяна на гуми и в специализирани площадки. Крайният потребител не дължи такса за предаването им.</p>
+        <p class="extraNote">Не ги оставяйте до контейнерите за битови или едрогабаритни отпадъци.</p>
+      </article>
+      <article class="extraCard">
+        <div class="small">Строителни отпадъци</div>
+        <h2>Само малки количества от домашни ремонти</h2>
+        <p>Малки количества строителни отпадъци от домакинствата се изнасят според районния график. Оставят се до контейнерите, а не вътре в тях.</p>
+        <p class="extraNote">За по-големи количества използвайте специализиран контейнер или лицензирана фирма.</p>
+      </article>
+    </section>
+
+    <section class="mapTools">
+      <div>
+        <div class="small">Контейнери за разделно събиране</div>
+        <div class="mapToolsTitle">Покажи контейнерите около адреса</div>
+      </div>
+      <div class="filterRow">
+        <label><input type="checkbox" class="containerFilter" value="Пластмаса и метал" checked> Пластмаса и метал</label>
+        <label><input type="checkbox" class="containerFilter" value="Стъкло" checked> Стъкло</label>
+        <label><input type="checkbox" class="containerFilter" value="Хартия и картон" checked> Хартия и картон</label>
+        <label class="hazardToggle"><input type="checkbox" id="hazardToggle" checked> Мобилни пунктове за опасни отпадъци</label>
+      </div>
+      <div id="containersMeta" class="sourceMeta"></div>
+    </section>
+
     <section class="mapCard">
       <div id="map"></div>
     </section>
 
     <footer>
       Официални зони за едрогабаритни отпадъци: Столична община / Данните на София. 
-      Google Maps се използва само за картата и геокодирането на въведения адрес.
+      Google Maps се използва за картата и геокодирането на въведения адрес. Локациите на контейнерите за разделно събиране са от официалния портал „Данните на София“. Мобилните пунктове за опасни отпадъци са по официалния график на Столична община за 2026 г.
     </footer>
   </main>
 
