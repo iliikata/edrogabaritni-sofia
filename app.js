@@ -144,8 +144,9 @@ async function checkAddress(){
     if(!feature) throw new Error("Адресът е намерен, но не попада в публикувана зона за едрогабаритни отпадъци.");
     renderResult(best.formatted_address,feature);
     drawZone(feature,loc);
+    lastSelectedFeature=feature;
     lastAddressLatLng=loc;
-    renderContainerMarkers(loc);
+    renderContainerMarkers(loc,feature);
     setStatus("Готово.");
   }catch(e){
     console.error(e);
@@ -215,26 +216,70 @@ function markerSymbol(type){
     strokeWeight: 2
   };
 }
-function renderContainerMarkers(center){
+
+function featureContainsPoint(feature, lng, lat){
+  return pointInGeometry([lng,lat], feature.geometry);
+}
+
+function groupedOffsets(points){
+  const groups=new Map();
+  for(const p of points){
+    const key=`${Number(p.lat).toFixed(6)}|${Number(p.lng).toFixed(6)}`;
+    if(!groups.has(key)) groups.set(key,[]);
+    groups.get(key).push(p);
+  }
+  const out=[];
+  for(const group of groups.values()){
+    if(group.length===1){
+      out.push({...group[0],displayLat:group[0].lat,displayLng:group[0].lng});
+      continue;
+    }
+    // Offset coincident containers around their real location so each remains separately clickable.
+    const radiusMeters=7;
+    const baseLat=Number(group[0].lat);
+    const latMetersPerDegree=111320;
+    const lngMetersPerDegree=111320*Math.cos(baseLat*Math.PI/180);
+    group.forEach((p,i)=>{
+      const angle=(2*Math.PI*i/group.length)-Math.PI/2;
+      const dLat=(Math.sin(angle)*radiusMeters)/latMetersPerDegree;
+      const dLng=(Math.cos(angle)*radiusMeters)/lngMetersPerDegree;
+      out.push({...p,displayLat:Number(p.lat)+dLat,displayLng:Number(p.lng)+dLng});
+    });
+  }
+  return out;
+}
+
+function renderContainerMarkers(center, selectedFeature=null){
   if(!map || !center) return;
   clearContainerMarkers();
+
   const types=selectedContainerTypes();
   const c={lat:center.lat(),lng:center.lng()};
 
-  const nearby=containerData
-    .filter(p=>types.includes(p.type) || p.type==="Разделно събиране")
-    .map(p=>({...p,dist:distanceMeters(c,p)}))
-    .filter(p=>p.dist<=2500)
-    .sort((a,b)=>a.dist-b.dist)
-    .slice(0,80);
+  // Show ONLY containers inside the selected bulky-waste polygon.
+  const feature = selectedFeature || lastSelectedFeature;
+  let visible = containerData.filter(p=>{
+    const typeOk = types.includes(p.type) || p.type==="Разделно събиране";
+    if(!typeOk) return false;
+    if(!feature) return false;
+    return featureContainsPoint(feature, Number(p.lng), Number(p.lat));
+  });
 
-  for(const p of nearby){
+  // Keep each physical container as a separate marker.
+  // If several share identical coordinates, spread the marker icons by a few metres visually.
+  visible = groupedOffsets(visible)
+    .map(p=>({...p,dist:distanceMeters(c,p)}))
+    .sort((a,b)=>a.dist-b.dist);
+
+  for(const p of visible){
     const m=new google.maps.Marker({
       map,
-      position:{lat:p.lat,lng:p.lng},
+      position:{lat:p.displayLat,lng:p.displayLng},
       icon:markerSymbol(p.type),
-      title:p.type
+      title:p.type,
+      zIndex:300 + Math.max(0, 10000-Math.round(p.dist))
     });
+
     m.addListener("click",()=>{
       const dist=p.dist<1000?`${Math.round(p.dist)} м`:`${(p.dist/1000).toFixed(1)} км`;
       const safeAddress=String(p.address||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));
@@ -249,8 +294,13 @@ function renderContainerMarkers(center){
   }
 
   const meta=document.getElementById("containersMeta");
-  if(meta) meta.textContent=`Показани ${nearby.length} контейнера в радиус до 2,5 км.`;
+  if(meta){
+    meta.textContent=visible.length
+      ? `Показани ${visible.length} отделни контейнера в маркираното каре.`
+      : `Няма публикувани контейнери от избраните типове в маркираното каре.`;
+  }
 }
+
 async function loadContainers(){
   const meta=document.getElementById("containersMeta");
   if(meta) meta.textContent="Зареждам локациите на контейнерите…";
@@ -381,8 +431,9 @@ async function useCurrentLocation(){
       }catch(_){}
       renderResult(label,feature);
       drawZone(feature,loc);
+      lastSelectedFeature=feature;
       lastAddressLatLng=loc;
-      renderContainerMarkers(loc);
+      renderContainerMarkers(loc,feature);
       setStatus("Готово.");
     }catch(e){
       setStatus(e.message||String(e),true);
@@ -429,7 +480,7 @@ async function init(){
   $("address").addEventListener("keydown",e=>{ if(e.key==="Enter") checkAddress(); });
   document.getElementById("nearMe").addEventListener("click",useCurrentLocation);
   document.querySelectorAll(".containerFilter").forEach(el=>{
-    el.addEventListener("change",()=>{ if(lastAddressLatLng) renderContainerMarkers(lastAddressLatLng); });
+    el.addEventListener("change",()=>{ if(lastAddressLatLng && lastSelectedFeature) renderContainerMarkers(lastAddressLatLng,lastSelectedFeature); });
   });
   const hazardToggle=document.getElementById("hazardToggle");
   if(hazardToggle) hazardToggle.addEventListener("change",()=>renderHazardMarkers());

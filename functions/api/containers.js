@@ -163,7 +163,8 @@ export async function onRequestGet({request}){
             type: normalizeType(rawType,rowText,resource.name||""),
             district: cols.district ? clean(obj[cols.district]) : "",
             operator: cols.operator ? clean(obj[cols.operator]) : "",
-            source: resource.name || ""
+            source: resource.name || "",
+            sourceRow: i
           });
           accepted++;
         }
@@ -181,7 +182,9 @@ export async function onRequestGet({request}){
 
     const seen=new Set(), dedup=[];
     for(const p of points){
-      const k=`${p.lat.toFixed(5)}|${p.lng.toFixed(5)}|${p.type.toLowerCase()}`;
+      // Only suppress the same source row being encountered twice.
+      // Two containers of the same type at the same coordinates remain two separate records.
+      const k=`${p.source}|${p.sourceRow}|${p.lat}|${p.lng}|${p.type}`;
       if(seen.has(k)) continue;
       seen.add(k); dedup.push(p);
     }
