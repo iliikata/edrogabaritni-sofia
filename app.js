@@ -449,6 +449,75 @@ async function useCurrentLocation(){
   },{enableHighAccuracy:true,timeout:10000,maximumAge:120000});
 }
 
+
+function clearDedicatedHazardMap(){
+  hazardMapMarkers.forEach(m=>m.setMap(null));
+  hazardMapMarkers=[];
+}
+
+async function initHazardMap(){
+  const el=document.getElementById("hazardMap");
+  if(!el || !window.google?.maps) return;
+
+  hazardMap=new google.maps.Map(el,{
+    center:{lat:42.6977,lng:23.3219},
+    zoom:11,
+    mapTypeControl:false,
+    streetViewControl:false,
+    fullscreenControl:true
+  });
+  hazardMapInfoWindow=new google.maps.InfoWindow();
+
+  await renderDedicatedHazardMap();
+}
+
+async function renderDedicatedHazardMap(){
+  if(!hazardMap) return;
+  clearDedicatedHazardMap();
+
+  const events=futureHazardEvents();
+  const bounds=new google.maps.LatLngBounds();
+
+  for(const e of events){
+    try{
+      const loc=await geocodeOne(e.address);
+      if(!loc) continue;
+
+      const marker=new google.maps.Marker({
+        map:hazardMap,
+        position:loc,
+        icon:hazardIcon(),
+        title:`Опасни отпадъци · ${e.district}`
+      });
+
+      marker.addListener("click",()=>{
+        const d=new Date(e.date+"T12:00:00");
+        const fullDate=new Intl.DateTimeFormat("bg-BG",{
+          weekday:"long",day:"numeric",month:"long",year:"numeric"
+        }).format(d);
+
+        hazardMapInfoWindow.setContent(
+          `<strong>Мобилен пункт за опасни отпадъци</strong>`+
+          `<br>${escapeHtml(e.district)}`+
+          `<br>${escapeHtml(fullDate)} · ${escapeHtml(e.time)}`+
+          `<br>${escapeHtml(e.address)}`+
+          `<br><span style="color:#666">Безплатно за домакинства</span>`
+        );
+        hazardMapInfoWindow.open({map:hazardMap,anchor:marker});
+      });
+
+      hazardMapMarkers.push(marker);
+      bounds.extend(loc);
+    }catch(err){
+      console.warn("Неуспешно геокодиране за отделната карта",e.address,err);
+    }
+  }
+
+  if(hazardMapMarkers.length){
+    hazardMap.fitBounds(bounds,48);
+  }
+}
+
 async function init(){
   const key=window.EGO_CONFIG?.GOOGLE_MAPS_API_KEY;
   if(!key || key.includes("PASTE_YOUR")){
@@ -477,6 +546,7 @@ async function init(){
   try{ await loadContainers(); }catch(e){ console.warn(e); }
   renderHazardUpcoming();
   renderHazardMarkers().catch(e=>console.warn(e));
+  initHazardMap().catch(e=>console.warn(e));
   setStatus(`Готово — заредени са ${zonesGeoJson.features.length} общински карета.`);
   $("check").onclick=checkAddress;
   $("address").addEventListener("keydown",e=>{ if(e.key==="Enter") checkAddress(); });

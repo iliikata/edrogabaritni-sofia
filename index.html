@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Едрогабаритни отпадъци — София</title>
-  <link rel="stylesheet" href="styles.css?v=20260831-expanded">
+  <link rel="stylesheet" href="styles.css?v=20260831-hazardmap">
 </head>
 <body>
   <main class="page">
@@ -142,6 +142,18 @@
         <a class="hazardPhone" href="tel:+359885401300">0885 401 300</a>
       </div>
       <div id="hazardUpcoming" class="hazardUpcoming"></div>
+
+      <div class="hazardMapWrap">
+        <div class="hazardMapHead">
+          <div>
+            <div class="small">Карта на мобилните пунктове</div>
+            <div class="hazardMapTitle">Предстоящи пунктове за опасни отпадъци</div>
+          </div>
+          <div class="hazardLegend">● мобилен пункт</div>
+        </div>
+        <div id="hazardMap"></div>
+      </div>
+
     </section>
 
 
@@ -166,8 +178,8 @@
     </footer>
   </main>
 
-  <script src="config.js?v=20260831-expanded"></script>
-  <script src="app.js?v=20260831-expanded"></script>
+  <script src="config.js?v=20260831-hazardmap"></script>
+  <script src="app.js?v=20260831-hazardmap"></script>
   <script>
     document.getElementById("refreshData").addEventListener("click", async () => {
       const b=document.getElementById("refreshData");

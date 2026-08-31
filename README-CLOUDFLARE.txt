@@ -64,3 +64,9 @@ SCHEMA-AWARE CONTAINER EXPANSION:
 - ECOBULPACK: each colored/model column is interpreted as an individual count.
 - BULECOPACK: dvukonteyneren_model_zhalt_zelen expands each set into one yellow + one green container.
 - Returned API records now represent physical containers, not just collection locations.
+
+
+HAZARDOUS WASTE MAP:
+- Отделна Google Map в секцията за опасни отпадъци.
+- Показва всички предстоящи мобилни пунктове от оставащия график за 2026 г.
+- При клик: район, дата, час, адрес и бележка, че е безплатно за домакинства.
