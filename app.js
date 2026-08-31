@@ -206,12 +206,13 @@ function distanceMeters(a,b){
   return 2*R*Math.asin(Math.sqrt(x));
 }
 function markerSymbol(type){
-  const fill = type==="Стъкло" ? "#2f7d45" : type==="Хартия и картон" ? "#2b65b1" : "#e0b000";
+  const fill = type==="Стъкло" ? "#188a43" : type==="Хартия и картон" ? "#1769d2" : "#f2b400";
   return {
-    path: google.maps.SymbolPath.CIRCLE,
-    scale: 7,
+    // simple bin-like rectangle, much easier to distinguish from Google POI dots
+    path: "M -5,-8 L 5,-8 L 6,7 L -6,7 Z M -4,-11 L 4,-11 L 5,-8 L -5,-8 Z",
+    scale: 1.25,
     fillColor: fill,
-    fillOpacity: .95,
+    fillOpacity: 1,
     strokeColor: "#ffffff",
     strokeWeight: 2
   };
@@ -235,7 +236,7 @@ function groupedOffsets(points){
       continue;
     }
     // Offset coincident containers around their real location so each remains separately clickable.
-    const radiusMeters=7;
+    const radiusMeters=12;
     const baseLat=Number(group[0].lat);
     const latMetersPerDegree=111320;
     const lngMetersPerDegree=111320*Math.cos(baseLat*Math.PI/180);
@@ -286,6 +287,7 @@ function renderContainerMarkers(center, selectedFeature=null){
       infoWindow.setContent(
         `<strong>${p.type}</strong>`+
         `${p.address?`<br>${safeAddress}`:""}`+
+        `${p.operator?`<br><span style="color:#777">${String(p.operator).toUpperCase()}</span>`:""}`+
         `<br><span style="color:#777">${dist} от търсения адрес</span>`
       );
       infoWindow.open({map,anchor:m});
@@ -296,15 +298,15 @@ function renderContainerMarkers(center, selectedFeature=null){
   const meta=document.getElementById("containersMeta");
   if(meta){
     meta.textContent=visible.length
-      ? `Показани ${visible.length} отделни контейнера в маркираното каре.`
-      : `Няма публикувани контейнери от избраните типове в маркираното каре.`;
+      ? `Намерени ${visible.length} отделни контейнера ВЪТРЕ в маркираното каре.`
+      : `Няма публикувани контейнери от избраните типове вътре в маркираното каре.`;
   }
 }
 
 async function loadContainers(){
   const meta=document.getElementById("containersMeta");
   if(meta) meta.textContent="Зареждам локациите на контейнерите…";
-  const r=await fetch("/api/containers?refresh=1",{cache:"no-store"});
+  const r=await fetch("/api/containers?refresh=1&v=20260831-expanded",{cache:"no-store"});
   const data=await r.json();
   if(!r.ok || data.error) throw new Error(data.error||"Не успях да заредя контейнерите.");
   containerData=(data.containers||[]).map(p=>{

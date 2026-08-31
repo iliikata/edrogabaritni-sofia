@@ -57,3 +57,10 @@ CONTAINER MAP UPDATE:
 - Показват се само контейнери вътре в избраното каре.
 - Всеки физически контейнер е отделен marker.
 - Контейнери с еднакви координати се разместват визуално с ~7 m, за да могат да се натискат поотделно.
+
+
+SCHEMA-AWARE CONTAINER EXPANSION:
+- ECOPACK: sin / zhalt / zelen are interpreted as per-location container counts.
+- ECOBULPACK: each colored/model column is interpreted as an individual count.
+- BULECOPACK: dvukonteyneren_model_zhalt_zelen expands each set into one yellow + one green container.
+- Returned API records now represent physical containers, not just collection locations.
