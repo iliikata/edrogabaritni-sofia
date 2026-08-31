@@ -144,6 +144,7 @@ async function checkAddress(){
     if(!feature) throw new Error("Адресът е намерен, но не попада в публикувана зона за едрогабаритни отпадъци.");
     renderResult(best.formatted_address,feature);
     drawZone(feature,loc);
+    showOutsideContainers=false;
     lastSelectedFeature=feature;
     lastAddressLatLng=loc;
     renderContainerMarkers(loc,feature);
@@ -259,17 +260,24 @@ function renderContainerMarkers(center, selectedFeature=null){
 
   // Show ONLY containers inside the selected bulky-waste polygon.
   const feature = selectedFeature || lastSelectedFeature;
-  let visible = containerData.filter(p=>{
+  let inside = containerData.filter(p=>{
     const typeOk = types.includes(p.type) || p.type==="Разделно събиране";
-    if(!typeOk) return false;
-    if(!feature) return false;
+    if(!typeOk || !feature) return false;
     return featureContainsPoint(feature, Number(p.lng), Number(p.lat));
   });
 
-  // Keep each physical container as a separate marker.
-  // If several share identical coordinates, spread the marker icons by a few metres visually.
+  let visible = inside;
+  if(showOutsideContainers && inside.length===0){
+    visible = containerData
+      .filter(p=>types.includes(p.type) || p.type==="Разделно събиране")
+      .map(p=>({...p,dist:distanceMeters(c,p)}))
+      .filter(p=>p.dist<=800)
+      .sort((a,b)=>a.dist-b.dist)
+      .slice(0,18);
+  }
+
   visible = groupedOffsets(visible)
-    .map(p=>({...p,dist:distanceMeters(c,p)}))
+    .map(p=>({...p,dist:p.dist ?? distanceMeters(c,p)}))
     .sort((a,b)=>a.dist-b.dist);
 
   for(const p of visible){
@@ -296,10 +304,18 @@ function renderContainerMarkers(center, selectedFeature=null){
   }
 
   const meta=document.getElementById("containersMeta");
+  const outsideBtn=document.getElementById("showNearestOutside");
   if(meta){
-    meta.textContent=visible.length
-      ? `Намерени ${visible.length} отделни контейнера ВЪТРЕ в маркираното каре.`
-      : `Няма публикувани контейнери от избраните типове вътре в маркираното каре.`;
+    if(inside.length){
+      meta.textContent=`Намерени ${inside.length} отделни контейнера вътре в маркираното каре.`;
+      if(outsideBtn) outsideBtn.hidden=true;
+    }else if(showOutsideContainers && visible.length){
+      meta.textContent=`В карето няма публикувани контейнери. Показвам ${visible.length} най-близки извън него.`;
+      if(outsideBtn){ outsideBtn.hidden=false; outsideBtn.textContent="Скрий контейнерите извън карето"; }
+    }else{
+      meta.textContent=`В това каре няма публикувани контейнери от избраните типове.`;
+      if(outsideBtn){ outsideBtn.hidden=false; outsideBtn.textContent="Покажи най-близките извън карето"; }
+    }
   }
 }
 
@@ -328,16 +344,16 @@ async function loadContainers(){
 
 
 const hazardousSchedule2026 = [
-  {date:"2026-09-24",time:"08:30–16:00",district:"Младост",address:'ж.к. Младост 4, ул. „Самара“, бл. 440, срещу парк „Сухото дере“, София'},
-  {date:"2026-09-25",time:"09:00–12:00",district:"Кремиковци",address:'кв. Челопечене, ул. „Ангел Маджаров“, площадът срещу Кметството, София'},
-  {date:"2026-09-25",time:"13:00–16:00",district:"Кремиковци",address:'кв. Враждебна, ул. „8-ма“ № 26, паркингът при ул. „57-ма“, София'},
-  {date:"2026-09-26",time:"10:00–15:00",district:"Слатина",address:'бул. „Шипченски проход“ № 67, София'},
-  {date:"2026-10-02",time:"09:00–16:00",district:"Овча купел",address:'бул. „Цар Борис III“ № 136 В, София'},
-  {date:"2026-10-15",time:"09:00–16:00",district:"Лозенец",address:'ул. „Йосиф Петров“, срещу Семинарията, София'},
-  {date:"2026-10-28",time:"09:00–16:00",district:"Панчарево",address:'с. Панчарево, ул. „Самоковско шосе“ № 230, София'},
-  {date:"2026-11-04",time:"09:30–15:30",district:"Искър",address:'бул. „Кръстю Пастухов“ № 18, София'},
-  {date:"2026-11-17",time:"09:30–15:30",district:"Нови Искър",address:'ул. „Искърско дефиле“ № 121, Нови Искър'},
-  {date:"2026-12-02",time:"10:00–15:00",district:"Връбница",address:'бул. „Хан Кубрат“, зад бл. 328, София'}
+  {date:"2026-09-24",time:"08:30–16:00",district:"Младост",address:'ж.к. Младост 4, ул. „Самара“, бл. 440, срещу парк „Сухото дере“, София',geoQuery:"ул. Самара 440, Младост 4, София"},
+  {date:"2026-09-25",time:"09:00–12:00",district:"Кремиковци",address:'кв. Челопечене, ул. „Ангел Маджаров“, площадът срещу Кметството, София',geoQuery:"ул. Ангел Маджаров, Челопечене, София"},
+  {date:"2026-09-25",time:"13:00–16:00",district:"Кремиковци",address:'кв. Враждебна, ул. „8-ма“ № 26, паркингът при ул. „57-ма“, София',geoQuery:"ул. 8-ма 26, Враждебна, София"},
+  {date:"2026-09-26",time:"10:00–15:00",district:"Слатина",address:'бул. „Шипченски проход“ № 67, София',geoQuery:"бул. Шипченски проход 67, София"},
+  {date:"2026-10-02",time:"09:00–16:00",district:"Овча купел",address:'бул. „Цар Борис III“ № 136 В, София',geoQuery:"бул. Цар Борис III 136В, София"},
+  {date:"2026-10-15",time:"09:00–16:00",district:"Лозенец",address:'ул. „Йосиф Петров“, срещу Семинарията, София',geoQuery:"ул. Йосиф Петров, София"},
+  {date:"2026-10-28",time:"09:00–16:00",district:"Панчарево",address:'с. Панчарево, ул. „Самоковско шосе“ № 230, София',geoQuery:"Самоковско шосе 230, Панчарево, София"},
+  {date:"2026-11-04",time:"09:30–15:30",district:"Искър",address:'бул. „Кръстю Пастухов“ № 18, София',geoQuery:"бул. Кръстю Пастухов 18, София"},
+  {date:"2026-11-17",time:"09:30–15:30",district:"Нови Искър",address:'ул. „Искърско дефиле“ № 121, Нови Искър',geoQuery:"ул. Искърско дефиле 121, Нови Искър"},
+  {date:"2026-12-02",time:"10:00–15:00",district:"Връбница",address:'бул. „Хан Кубрат“, зад бл. 328, София',geoQuery:"бул. Хан Кубрат, бл. 328, София"}
 ];
 
 function futureHazardEvents(){
@@ -385,7 +401,7 @@ async function renderHazardMarkers(){
   const events=futureHazardEvents();
   for(const e of events){
     try{
-      const loc=await geocodeOne(e.address);
+      const loc=await geocodeOne(e.geoQuery || e.address);
       if(!loc) continue;
       const m=new google.maps.Marker({
         map,
@@ -433,6 +449,7 @@ async function useCurrentLocation(){
       }catch(_){}
       renderResult(label,feature);
       drawZone(feature,loc);
+      showOutsideContainers=false;
       lastSelectedFeature=feature;
       lastAddressLatLng=loc;
       renderContainerMarkers(loc,feature);
@@ -480,14 +497,14 @@ async function renderDedicatedHazardMap(){
 
   for(const e of events){
     try{
-      const loc=await geocodeOne(e.address);
+      const loc=await geocodeOne(e.geoQuery || e.address);
       if(!loc) continue;
 
       const marker=new google.maps.Marker({
         map:hazardMap,
         position:loc,
-        icon:hazardIcon(),
-        title:`Опасни отпадъци · ${e.district}`
+        title:`Опасни отпадъци · ${e.district}`,
+        label:{text:"!",color:"#ffffff",fontWeight:"800"}
       });
 
       marker.addListener("click",()=>{
@@ -513,8 +530,12 @@ async function renderDedicatedHazardMap(){
     }
   }
 
+  const status=document.getElementById("hazardMapStatus");
   if(hazardMapMarkers.length){
     hazardMap.fitBounds(bounds,48);
+    if(status) status.textContent=`Показани ${hazardMapMarkers.length} предстоящи мобилни пункта.`;
+  }else{
+    if(status) status.textContent="Не успях да позиционирам пунктовете на картата. Адресите и датите по-горе остават валидни.";
   }
 }
 
@@ -556,6 +577,11 @@ async function init(){
   });
   const hazardToggle=document.getElementById("hazardToggle");
   if(hazardToggle) hazardToggle.addEventListener("change",()=>renderHazardMarkers());
+  const outsideBtn=document.getElementById("showNearestOutside");
+  if(outsideBtn) outsideBtn.addEventListener("click",()=>{
+    showOutsideContainers=!showOutsideContainers;
+    if(lastAddressLatLng && lastSelectedFeature) renderContainerMarkers(lastAddressLatLng,lastSelectedFeature);
+  });
 }
 
 init().catch(e=>setStatus(e.message||String(e),true));

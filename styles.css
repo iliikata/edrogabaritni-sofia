@@ -126,3 +126,6 @@ footer{font-size:12px;color:#8b9095;line-height:1.5;margin-top:16px}
   .hazardMapHead{align-items:flex-start;flex-direction:column}
   #hazardMap{height:320px}
 }
+
+.outsideBtn{margin-top:10px;min-height:36px;padding:0 12px;background:#f4f5f6;color:#24272a;border:1px solid var(--line);border-radius:10px;font-size:12px;font-weight:800}
+.hazardMapStatus{padding:10px 14px 12px}

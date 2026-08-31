@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <title>Едрогабаритни отпадъци — София</title>
-  <link rel="stylesheet" href="styles.css?v=20260831-hazardmap">
+  <link rel="stylesheet" href="styles.css?v=20260831-fix2">
 </head>
 <body>
   <main class="page">
@@ -50,6 +50,7 @@
         <label class="hazardToggle"><input type="checkbox" id="hazardToggle" checked> Мобилни пунктове за опасни отпадъци</label>
       </div>
       <div id="containersMeta" class="sourceMeta"></div>
+<button id="showNearestOutside" class="outsideBtn" type="button" hidden>Покажи най-близките извън карето</button>
     </section>
 
       <div class="dateGrid">
@@ -152,6 +153,7 @@
           <div class="hazardLegend">● мобилен пункт</div>
         </div>
         <div id="hazardMap"></div>
+<div id="hazardMapStatus" class="sourceMeta hazardMapStatus"></div>
       </div>
 
     </section>
@@ -178,8 +180,8 @@
     </footer>
   </main>
 
-  <script src="config.js?v=20260831-hazardmap"></script>
-  <script src="app.js?v=20260831-hazardmap"></script>
+  <script src="config.js?v=20260831-fix2"></script>
+  <script src="app.js?v=20260831-fix2"></script>
   <script>
     document.getElementById("refreshData").addEventListener("click", async () => {
       const b=document.getElementById("refreshData");
